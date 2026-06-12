@@ -1,0 +1,31 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.pytest_cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# n8n runtime local data / configurations
+.n8n/
+n8n/.env
+
+# Sensitive environments
+.env
+.env.local
+.env.*.local
+
+# RPA Runtime Data & Outputs
+# We ignore the files inside input/output/logs, but keep the folders using gitkeep
+data/output/*
+!data/output/.gitkeep
+data/input/*
+!data/input/cnpjs_exemplo.txt
+logs/*
+!logs/.gitkeep
