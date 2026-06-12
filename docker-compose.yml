@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  n8n:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: govdata_automator_n8n
+    restart: unless-stopped
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    env_file:
+      - ./n8n/.env
+    environment:
+      - N8N_PORT=5678
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      - TZ=America/Sao_Paulo
+      # Allow execution of scripts and commands
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - .:/data
+    working_dir: /data
+
+volumes:
+  n8n_data:
+    driver: local
