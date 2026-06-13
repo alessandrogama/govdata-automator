@@ -2,6 +2,25 @@
   "name": "main_flow",
   "nodes": [
     {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days"
+            }
+          ]
+        }
+      },
+      "id": "2fd83a7c-501b-4f9b-8321-df62eb681ef9",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        220,
+        100
+      ]
+    },
+    {
       "parameters": {},
       "id": "1ad362c3-4d69-42b7-a3f2-efef4efbca77",
       "name": "Manual Trigger",
@@ -20,7 +39,7 @@
       },
       "id": "e0e85ff7-03f4-4345-8f64-88331fb35593",
       "name": "Read CNPJ File",
-      "type": "n8n-nodes-base.readWriteFileFromDisk",
+      "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1,
       "position": [
         420,
@@ -158,7 +177,7 @@
       },
       "id": "8cbe98c2-3e28-4ef7-b247-a8ee3b97b0a8",
       "name": "Write Raw CSV",
-      "type": "n8n-nodes-base.readWriteFileFromDisk",
+      "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1,
       "position": [
         2280,
@@ -187,7 +206,7 @@
       },
       "id": "5f5e9bd1-cdfa-4e78-be7f-fb10c5e3fef9",
       "name": "Write Summary JSON",
-      "type": "n8n-nodes-base.readWriteFileFromDisk",
+      "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1,
       "position": [
         2080,
@@ -247,6 +266,17 @@
     }
   ],
   "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read CNPJ File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Manual Trigger": {
       "main": [
         [

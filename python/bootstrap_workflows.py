@@ -112,11 +112,12 @@ def run_api_bootstrap(api_key: str, host: str, port: str) -> None:
         print(f"   [Criado] ID: {main_id}")
         
         # 5. Activate workflows using the correct POST /api/v1/workflows/{id}/activate endpoint
-        print("-> Ativando workflows...")
-        for uid in [cnpj_id, cep_id, main_id]:
-            act_res = requests.post(f"{base_url}/{uid}/activate", headers=headers, json={})
-            act_res.raise_for_status()
+        print("-> Ativando workflow principal...")
+        act_res = requests.post(f"{base_url}/{main_id}/activate", headers=headers, json={})
+        act_res.raise_for_status()
         
+        print("✅ main_flow ativado")
+        print("ℹ️  cnpj_flow e cep_flow são sub-workflows — permanecem inativos (correto)")
         print("Bootstrap via API REST concluído com sucesso!")
         
     except requests.exceptions.HTTPError as e:
