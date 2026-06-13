@@ -1,9 +1,14 @@
-FROM n8nio/n8n:latest
+FROM n8nio/n8n:1.88.0
 
 USER root
 
-# Install Python 3 and pre-compiled alpine packages for pandas and requests
-# This prevents compilation overhead and "externally-managed-environment" pip errors
-RUN apk add --no-cache python3 py3-pandas py3-requests
+RUN apk add --no-cache python3 py3-pip && \
+    pip3 install pandas requests --break-system-packages
+
+RUN mkdir -p /home/node/.n8n && \
+    chown -R node:node /home/node/.n8n
 
 USER node
+
+ENTRYPOINT ["n8n"]
+CMD ["start"]

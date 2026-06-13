@@ -184,6 +184,5 @@
     }
   },
   "settings": {},
-  "active": false,
-  "id": "cep_flow"
+  "active": false
 }

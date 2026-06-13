@@ -14,7 +14,7 @@
     },
     {
       "parameters": {
-        "command": "python3 python/validate_cnpj.py \"{{ $json.cnpj }}\" || echo '{\"valid\": false, \"cnpj\": \"{{ $json.cnpj }}\", \"cleaned\": \"\"}'"
+        "command": "python3 /data/python/validate_cnpj.py \"{{ $json.cnpj }}\" || echo '{\"valid\": false, \"cnpj\": \"{{ $json.cnpj }}\", \"cleaned\": \"\"}'"
       },
       "id": "673f4c6e-821b-4fc6-b847-e1a5f57fbe13",
       "name": "Validate CNPJ (Python)",
@@ -291,6 +291,5 @@
     }
   },
   "settings": {},
-  "active": false,
-  "id": "cnpj_flow"
+  "active": false
 }

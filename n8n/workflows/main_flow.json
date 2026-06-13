@@ -42,7 +42,7 @@
     },
     {
       "parameters": {
-        "workflowId": "cnpj_flow",
+        "workflowId": "VaJGyJrkF6Ml8Xrc",
         "options": {
           "mode": "wait"
         }
@@ -78,7 +78,7 @@
     },
     {
       "parameters": {
-        "workflowId": "cep_flow",
+        "workflowId": "RWnwu5G7Y9eAYajP",
         "options": {
           "mode": "wait"
         }
@@ -167,7 +167,7 @@
     },
     {
       "parameters": {
-        "command": "=python3 python/process_report.py \"/data/data/output/resultado_RAW_{{ $('Consolidate Outputs').item.json.timestamp }}.csv\" \"/data/data/output/resultado_{{ $('Consolidate Outputs').item.json.dateStr }}.csv\""
+        "command": "=python3 /data/python/process_report.py \"/data/data/output/resultado_RAW_{{ $('Consolidate Outputs').item.json.timestamp }}.csv\" \"/data/data/output/resultado_{{ $('Consolidate Outputs').item.json.dateStr }}.csv\""
       },
       "id": "c62a8de2-8c20-410a-9d93-3ea70ca0c08d",
       "name": "Post-process CSV (Python)",
@@ -409,6 +409,5 @@
     }
   },
   "settings": {},
-  "active": false,
-  "id": "main_flow"
+  "active": false
 }
