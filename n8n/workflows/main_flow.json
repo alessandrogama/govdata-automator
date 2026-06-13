@@ -61,7 +61,7 @@
     },
     {
       "parameters": {
-        "workflowId": "DCWQpCH2KLWSsHcR",
+        "workflowId": "u9tIDYUSZ7HxlbfJ",
         "options": {
           "mode": "wait"
         }
@@ -97,7 +97,7 @@
     },
     {
       "parameters": {
-        "workflowId": "mTxaeiXZFTXredWh",
+        "workflowId": "7svCAqu7Wo9bLWs2",
         "options": {
           "mode": "wait"
         }
@@ -261,7 +261,7 @@
           "parameters": [
             {
               "name": "content",
-              "value": "=📊 **GovData Automator - Execução Concluída**\\n📅 Data: {{ $('Consolidate Outputs').item.json.dateStr }}\\n\\n✅ Sucesso: {{ $('Consolidate Outputs').item.json.summary.success_count }}\\n❌ Erros: {{ $('Consolidate Outputs').item.json.summary.error_count }}\\n📋 Total Processado: {{ $('Consolidate Outputs').item.json.summary.total_processed }}\\n\\nCNPJs com falha: {{ JSON.stringify($('Consolidate Outputs').item.json.summary.failed_cnpjs) }}"
+              "value": "=📊 **GovData Automator - Execução Concluída**\n📅 Data: {{ $('Consolidate Outputs').item.json.dateStr }}\n\n✅ Sucesso: {{ $('Consolidate Outputs').item.json.summary.success_count }}\n❌ Erros: {{ $('Consolidate Outputs').item.json.summary.error_count }}\n📋 Total Processado: {{ $('Consolidate Outputs').item.json.summary.total_processed }}\n\nCNPJs com falha: {{ JSON.stringify($('Consolidate Outputs').item.json.summary.failed_cnpjs) }}"
             }
           ]
         },
