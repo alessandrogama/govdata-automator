@@ -60,13 +60,30 @@ def run_api_bootstrap(api_key: str, host: str, port: str) -> None:
         "Content-Type": "application/json"
     }
     
-    # Load flows
-    cnpj_flow = load_workflow_file("cnpj_flow.json")
-    cep_flow = load_workflow_file("cep_flow.json")
-    main_flow = load_workflow_file("main_flow.json")
-    
     try:
-        # 1. Create cnpj_flow
+        # Step 1: Query existing workflows to find and delete previous instances (idempotency)
+        print("-> Buscando workflows existentes...")
+        res = requests.get(base_url, headers=headers)
+        res.raise_for_status()
+        workflows = res.json().get("data", [])
+        
+        existing_ids = {}
+        for w in workflows:
+            name = w.get("name")
+            if name in ["cnpj_flow", "cep_flow", "main_flow"]:
+                existing_ids[name] = w.get("id")
+                
+        def delete_if_exists(name: str) -> None:
+            uid = existing_ids.get(name)
+            if uid:
+                print(f"   [Delete] Removendo workflow '{name}' existente (ID: {uid})...")
+                del_res = requests.delete(f"{base_url}/{uid}", headers=headers)
+                if del_res.status_code not in [200, 204, 404]:
+                    del_res.raise_for_status()
+
+        # Step 2: Delete and recreate cnpj_flow
+        delete_if_exists("cnpj_flow")
+        cnpj_flow = load_workflow_file("cnpj_flow.json")
         print("-> Enviando cnpj_flow para a API...")
         res = requests.post(base_url, headers=headers, json={
             "name": "cnpj_flow",
@@ -78,7 +95,9 @@ def run_api_bootstrap(api_key: str, host: str, port: str) -> None:
         cnpj_id = res.json()["id"]
         print(f"   [Criado] ID: {cnpj_id}")
         
-        # 2. Create cep_flow
+        # Step 3: Delete and recreate cep_flow
+        delete_if_exists("cep_flow")
+        cep_flow = load_workflow_file("cep_flow.json")
         print("-> Enviando cep_flow para a API...")
         res = requests.post(base_url, headers=headers, json={
             "name": "cep_flow",
@@ -90,28 +109,45 @@ def run_api_bootstrap(api_key: str, host: str, port: str) -> None:
         cep_id = res.json()["id"]
         print(f"   [Criado] ID: {cep_id}")
         
-        # 3. Update main_flow JSON with correct workflow IDs
-        main_flow_str = json.dumps(main_flow)
-        main_flow_str = main_flow_str.replace('"workflowId": "cnpj_flow"', f'"workflowId": "{cnpj_id}"')
-        main_flow_str = main_flow_str.replace('"workflowId": "cep_flow"', f'"workflowId": "{cep_id}"')
-        main_flow_updated = json.loads(main_flow_str)
+        # Step 4: Delete main_flow, patch IDs in Python object, and create main_flow
+        delete_if_exists("main_flow")
         
-        save_workflow_file("main_flow.json", main_flow_updated)
-        print("-> Arquivo main_flow.json atualizado com as referências corretas no disco.")
+        # Load main_flow.json
+        main_flow = load_workflow_file("main_flow.json")
         
-        # 4. Create main_flow
+        # Perform robust Python dictionary manipulation to patch workflowId
+        print("-> Aplicando patch de IDs nos nós de sub-workflow do main_flow...")
+        patched_cnpj = False
+        patched_cep = False
+        
+        for node in main_flow.get("nodes", []):
+            if node.get("name") == "Call cnpj_flow Sub-workflow":
+                node.setdefault("parameters", {})["workflowId"] = cnpj_id
+                patched_cnpj = True
+            elif node.get("name") == "Call cep_flow Sub-workflow":
+                node.setdefault("parameters", {})["workflowId"] = cep_id
+                patched_cep = True
+                
+        if not patched_cnpj or not patched_cep:
+            print("Aviso: Não foi possível localizar os nós de sub-workflow em main_flow.json para realizar o patch.", file=sys.stderr)
+        
+        # Save the fully patched main_flow back to disk
+        save_workflow_file("main_flow.json", main_flow)
+        print("-> Arquivo main_flow.json atualizado e salvo no disco.")
+        
+        # Create main_flow
         print("-> Enviando main_flow para a API...")
         res = requests.post(base_url, headers=headers, json={
             "name": "main_flow",
-            "nodes": main_flow_updated.get("nodes", []),
-            "connections": main_flow_updated.get("connections", {}),
-            "settings": main_flow_updated.get("settings", {})
+            "nodes": main_flow.get("nodes", []),
+            "connections": main_flow.get("connections", {}),
+            "settings": main_flow.get("settings", {})
         })
         res.raise_for_status()
         main_id = res.json()["id"]
         print(f"   [Criado] ID: {main_id}")
         
-        # 5. Activate workflows using the correct POST /api/v1/workflows/{id}/activate endpoint
+        # Step 5: Activate only main_flow using the correct endpoint
         print("-> Ativando workflow principal...")
         act_res = requests.post(f"{base_url}/{main_id}/activate", headers=headers, json={})
         act_res.raise_for_status()
