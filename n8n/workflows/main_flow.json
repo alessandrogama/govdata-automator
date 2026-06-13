@@ -48,7 +48,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const binaryData = $input.first().binary?.data;\n\nif (!binaryData) {\n  throw new Error('Nenhum dado binário encontrado. Verifique se o arquivo cnpjs_exemplo.txt existe em /data/data/input/');\n}\n\nconst content = Buffer.from(binaryData.data, 'base64').toString('utf-8');\n\nconst cnpjs = content\n  .split(/\\r?\\n/)\n  .map(line => line.trim())\n  .filter(line => line.length > 0);\n\nif (cnpjs.length === 0) {\n  throw new Error('Arquivo de CNPJs está vazio.');\n}\n\nreturn cnpjs.map(cnpj => ({ json: { cnpj } }));"
+        "jsCode": "const binaryData = $input.first().binary?.data;\n\nif (!binaryData) {\n  throw new Error('Nenhum dado binário encontrado. Verifique se o arquivo cnpjs_exemplo.txt existe em /data/data/input/');\n}\n\nconst content = Buffer.from(binaryData.data, 'base64').toString('utf-8');\n\nconst cnpjs = content\n  .split(/\\r?\\n/)\n  .map(line => line.trim())\n  .map(line => line.replace(/[^0-9./\\-]/g, ''))\n  .filter(line => line.length > 0 && line.length <= 20);\n\nif (cnpjs.length === 0) {\n  throw new Error('Arquivo de CNPJs está vazio ou não contém registros válidos.');\n}\n\nreturn cnpjs.map(cnpj => ({ json: { cnpj } }));"
       },
       "id": "d8a1c97a-9a99-4d2b-a01b-554f67c3bbde",
       "name": "Parse CNPJ List",
@@ -228,7 +228,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const failures = $json.failures || [];\nconst timestamp = $json.summary.timestamp;\n\n// Format each error as a single JSON line\nconst lines = failures.map(f => \n  JSON.stringify({\n    timestamp: timestamp,\n    cnpj: f.cnpj,\n    status: \"error\",\n    error_message: f.error_message\n  })\n);\n\nreturn {\n  lines: lines.join('\\n') + (lines.length > 0 ? '\\n' : '')\n};"
+        "jsCode": "const failures = $json.failures || [];\nconst timestamp = $json.summary.timestamp;\n\n// Format each error as a single JSON line\nconst lines = failures.map(f => \n  JSON.stringify({\n    timestamp: timestamp,\n    cnpj: f.cnpj,\n    status: \"error\",\n    error_message: f.error_message\n  })\n);\n\nconst content = lines.join('\\n') + (lines.length > 0 ? '\\n' : '');\nconst buffer = Buffer.from(content, 'utf-8');\n\nreturn [{\n  json: {},\n  binary: {\n    data: {\n      data: buffer.toString('base64'),\n      mimeType: 'text/plain',\n      fileName: 'errors.jsonl'\n    }\n  }\n}];"
       },
       "id": "6eb89df2-4ab8-4cf2-83b7-7eb1a43a08d2",
       "name": "Format Errors JSONL",
@@ -241,11 +241,16 @@
     },
     {
       "parameters": {
-        "command": "=echo -n \"{{ $json.lines }}\" >> /data/logs/errors.jsonl"
+        "operation": "write",
+        "fileName": "/data/logs/errors.jsonl",
+        "dataPropertyName": "data",
+        "options": {
+          "append": true
+        }
       },
       "id": "c67e98d2-43bb-4d7a-af7e-3ea7a2b2e88a",
       "name": "Append to errors.jsonl",
-      "type": "n8n-nodes-base.executeCommand",
+      "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1,
       "position": [
         2280,

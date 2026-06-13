@@ -58,7 +58,7 @@ def main() -> None:
     cnpj_input = args.cnpj
     if not cnpj_input:
         if not sys.stdin.isatty():
-            cnpj_input = sys.stdin.read().strip()
+            cnpj_input = sys.stdin.read(1000).strip()
         else:
             print(json.dumps({"error": "CNPJ não fornecido"}), file=sys.stderr)
             sys.exit(1)

@@ -29,7 +29,6 @@ services:
     restart: "no"
     volumes:
       - .:/data
-      - n8n_data:/home/node/.n8n
     working_dir: /data
     env_file:
       - ./n8n/.env
