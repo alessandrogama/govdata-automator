@@ -61,7 +61,7 @@
     },
     {
       "parameters": {
-        "workflowId": "mH39vOzAuFD3jv8n",
+        "workflowId": "DCWQpCH2KLWSsHcR",
         "options": {
           "mode": "wait"
         }
@@ -97,7 +97,7 @@
     },
     {
       "parameters": {
-        "workflowId": "AHegKq9ouTDCQzoc",
+        "workflowId": "mTxaeiXZFTXredWh",
         "options": {
           "mode": "wait"
         }
@@ -126,8 +126,7 @@
     },
     {
       "parameters": {
-        "mode": "combine",
-        "combinationMode": "multiplex",
+        "mode": "append",
         "options": {}
       },
       "id": "a5de12d2-28df-4bc9-93e1-31a5a04e54bc",
