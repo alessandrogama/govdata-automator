@@ -28,7 +28,11 @@ Sistema de automação de processos (RPA) para coleta, validação e consolidaç
 
 ## Visão geral
 
-O GovData Automator processa uma lista de CNPJs em lote e retorna dados cadastrais completos, enriquecidos com geolocalização via CEP. Para cada CNPJ na fila, o sistema:
+O GovData Automator processa uma lista de CNPJs em lote e retorna dados cadastrais completos, enriquecidos com geolocalização via CEP. 
+
+![Fluxo Principal n8n](docs/main_flow.png)
+
+Para cada CNPJ na fila, o sistema:
 
 1. Valida o dígito verificador matematicamente (sem dependências externas)
 2. Consulta a [BrasilAPI](https://brasilapi.com.br) para dados cadastrais
