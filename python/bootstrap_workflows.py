@@ -157,8 +157,19 @@ def run_api_bootstrap(api_key: str, host: str, port: str) -> None:
         print("Bootstrap via API REST concluído com sucesso!")
         
     except requests.exceptions.HTTPError as e:
-        print(f"Erro na API do n8n: {e.response.status_code} - {e.response.text}", file=sys.stderr)
-        sys.exit(1)
+        if e.response.status_code == 401:
+            print("⚠️  Erro na API do n8n: 401 - Não autorizado.")
+            print("   Sua N8N_API_KEY no n8n/.env está incorreta ou expirou (por exemplo, após deletar o volume do banco).")
+            print("   Passos para corrigir:")
+            print("   1. Acesse http://localhost:5678 no seu navegador")
+            print("   2. Se o banco foi resetado, crie a nova conta admin")
+            print("   3. Vá em Settings → API → crie uma nova API Key")
+            print("   4. Atualize N8N_API_KEY no arquivo n8n/.env com o novo valor")
+            print("   5. Execute: docker compose restart bootstrap")
+            sys.exit(0)
+        else:
+            print(f"Erro na API do n8n: {e.response.status_code} - {e.response.text}", file=sys.stderr)
+            sys.exit(1)
     except Exception as e:
         print(f"Erro inesperado no bootstrap: {e}", file=sys.stderr)
         sys.exit(1)
