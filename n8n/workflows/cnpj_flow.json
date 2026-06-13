@@ -1,0 +1,296 @@
+{
+  "name": "cnpj_flow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "e9c1db16-86eb-460d-9b5a-43eb25867f70",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        380,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "command": "python3 python/validate_cnpj.py \"{{ $json.cnpj }}\" || echo '{\"valid\": false, \"cnpj\": \"{{ $json.cnpj }}\", \"cleaned\": \"\"}'"
+      },
+      "id": "673f4c6e-821b-4fc6-b847-e1a5f57fbe13",
+      "name": "Validate CNPJ (Python)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        580,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ JSON.parse($json.stdout).valid }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "c1f71df0-562a-4a24-9b2f-3729e925bbf9",
+      "name": "Is Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        780,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://brasilapi.com.br/api/cnpj/v1/{{ JSON.parse($json.stdout).cleaned }}",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "id": "3af4757c-2bdf-4ea8-af82-b7e3240e8979",
+      "name": "BrasilAPI CNPJ",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        980,
+        140
+      ],
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.cnpj }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "5cb9fbba-d2f3-4f9b-a019-216174a7378c",
+      "name": "Fetch Successful?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1180,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "success"
+            },
+            {
+              "name": "cnpj",
+              "value": "={{ $json.cnpj }}"
+            },
+            {
+              "name": "razao_social",
+              "value": "={{ $json.razao_social }}"
+            },
+            {
+              "name": "situacao_cadastral",
+              "value": "={{ $json.descricao_situacao_cadastral }}"
+            },
+            {
+              "name": "cnae_codigo",
+              "value": "={{ $json.cnae_fiscal }}"
+            },
+            {
+              "name": "cnae_descricao",
+              "value": "={{ $json.cnae_fiscal_descricao }}"
+            },
+            {
+              "name": "data_abertura",
+              "value": "={{ $json.data_inicio_atividade }}"
+            },
+            {
+              "name": "logradouro",
+              "value": "={{ $json.logradouro }}"
+            },
+            {
+              "name": "numero",
+              "value": "={{ $json.numero }}"
+            },
+            {
+              "name": "complemento",
+              "value": "={{ $json.complemento }}"
+            },
+            {
+              "name": "bairro",
+              "value": "={{ $json.bairro }}"
+            },
+            {
+              "name": "uf",
+              "value": "={{ $json.uf }}"
+            },
+            {
+              "name": "municipio",
+              "value": "={{ $json.municipio }}"
+            },
+            {
+              "name": "cep",
+              "value": "={{ $json.cep }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f5f5cbe7-d16c-4b68-b7eb-304bb7f55b9e",
+      "name": "Format Success Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        1380,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "error"
+            },
+            {
+              "name": "cnpj",
+              "value": "={{ $('Validate CNPJ (Python)').json.stdout ? JSON.parse($('Validate CNPJ (Python)').json.stdout).cnpj : '' }}"
+            },
+            {
+              "name": "error_message",
+              "value": "Empresa não encontrada ou falha de conexão (404/Timeout)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1e66c79a-e279-4d69-a111-e6e22ee6919b",
+      "name": "Format 404 Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        1380,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "error"
+            },
+            {
+              "name": "cnpj",
+              "value": "={{ $('Validate CNPJ (Python)').json.stdout ? JSON.parse($('Validate CNPJ (Python)').json.stdout).cnpj : '' }}"
+            },
+            {
+              "name": "error_message",
+              "value": "CNPJ inválido por dígito verificador"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a9bfef61-e0e6-425f-bc9c-9dfd7ab3e1b1",
+      "name": "Format Invalid Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        980,
+        340
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate CNPJ (Python)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate CNPJ (Python)": {
+      "main": [
+        [
+          {
+            "node": "Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "BrasilAPI CNPJ",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Invalid Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BrasilAPI CNPJ": {
+      "main": [
+        [
+          {
+            "node": "Fetch Successful?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Successful?": {
+      "main": [
+        [
+          {
+            "node": "Format Success Output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format 404 Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "active": false,
+  "id": "cnpj_flow"
+}

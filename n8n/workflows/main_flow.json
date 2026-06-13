@@ -1,0 +1,414 @@
+{
+  "name": "main_flow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1ad362c3-4d69-42b7-a3f2-efef4efbca77",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        220,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "fileType": "text",
+        "filePath": "/data/data/input/cnpjs_exemplo.txt",
+        "options": {}
+      },
+      "id": "e0e85ff7-03f4-4345-8f64-88331fb35593",
+      "name": "Read CNPJ File",
+      "type": "n8n-nodes-base.readWriteFileFromDisk",
+      "typeVersion": 1,
+      "position": [
+        420,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const content = $json.fileContent || '';\nconst lines = content.split(/\\r?\\n/);\nconst cnpjs = lines\n  .map(line => line.trim())\n  .filter(line => line.length > 0);\n\nreturn cnpjs.map(cnpj => ({ json: { cnpj } }));"
+      },
+      "id": "d8a1c97a-9a99-4d2b-a01b-554f67c3bbde",
+      "name": "Parse CNPJ List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        620,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "cnpj_flow",
+        "options": {
+          "mode": "wait"
+        }
+      },
+      "id": "422e1b12-9c3f-4fe3-97be-21147a468d6d",
+      "name": "Call cnpj_flow Sub-workflow",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        820,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "value2": "success"
+            }
+          ]
+        }
+      },
+      "id": "7fa27db0-3d71-4d37-9750-b467ecb2e9d2",
+      "name": "CNPJ Success?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "cep_flow",
+        "options": {
+          "mode": "wait"
+        }
+      },
+      "id": "4bc8e1bd-9a3b-4899-b1d7-b86dbad6946a",
+      "name": "Call cep_flow Sub-workflow",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        1220,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const company = $('Call cnpj_flow Sub-workflow').item.json;\nconst cepData = $json;\n\nreturn {\n  ...company,\n  logradouro: cepData.logradouro_completo || company.logradouro,\n  bairro: cepData.bairro || company.bairro,\n  municipio: cepData.cidade || company.municipio,\n  uf: cepData.estado || company.uf,\n  latitude: cepData.latitude || '',\n  longitude: cepData.longitude || '',\n  cep_status: cepData.cep_status || 'error'\n};"
+      },
+      "id": "e818b2c4-8de6-455b-9d41-e9bf8c1775f0",
+      "name": "Merge CNPJ and CEP Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1420,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "multiplex",
+        "options": {}
+      },
+      "id": "a5de12d2-28df-4bc9-93e1-31a5a04e54bc",
+      "name": "Merge Success and Failures",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1680,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const allItems = $input.all().map(item => item.json);\nconst successes = allItems.filter(item => item.status === 'success');\nconst failures = allItems.filter(item => item.status === 'error');\n\nconst now = new Date();\nconst dateStr = now.toISOString().split('T')[0];\nconst timestamp = now.toISOString().replace(/[:.]/g, '-');\n\nconst summary = {\n  timestamp: now.toISOString(),\n  total_processed: allItems.length,\n  success_count: successes.length,\n  error_count: failures.length,\n  failed_cnpjs: failures.map(f => ({ cnpj: f.cnpj, error: f.error_message }))\n};\n\nreturn [{\n  json: {\n    summary,\n    successes,\n    failures,\n    dateStr,\n    timestamp\n  }\n}];"
+      },
+      "id": "2a4fe3bd-1a74-4b5c-b892-23efef219a1a",
+      "name": "Consolidate Outputs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1880,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "fileFormat": "csv",
+        "dataPropertyName": "successes",
+        "options": {
+          "headerRow": true
+        }
+      },
+      "id": "efb9e120-e221-4ea7-9d7a-7db1a43aef8d",
+      "name": "JSON Success to CSV",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2080,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "fileType": "binary",
+        "filePath": "=/data/data/output/resultado_RAW_{{ $('Consolidate Outputs').item.json.timestamp }}.csv",
+        "options": {}
+      },
+      "id": "8cbe98c2-3e28-4ef7-b247-a8ee3b97b0a8",
+      "name": "Write Raw CSV",
+      "type": "n8n-nodes-base.readWriteFileFromDisk",
+      "typeVersion": 1,
+      "position": [
+        2280,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=python3 python/process_report.py \"/data/data/output/resultado_RAW_{{ $('Consolidate Outputs').item.json.timestamp }}.csv\" \"/data/data/output/resultado_{{ $('Consolidate Outputs').item.json.dateStr }}.csv\""
+      },
+      "id": "c62a8de2-8c20-410a-9d93-3ea70ca0c08d",
+      "name": "Post-process CSV (Python)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2480,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "fileType": "text",
+        "filePath": "=/data/data/output/resumo_{{ $('Consolidate Outputs').item.json.dateStr }}.json",
+        "fileContent": "={{ JSON.stringify($json.summary, null, 2) }}",
+        "options": {}
+      },
+      "id": "5f5e9bd1-cdfa-4e78-be7f-fb10c5e3fef9",
+      "name": "Write Summary JSON",
+      "type": "n8n-nodes-base.readWriteFileFromDisk",
+      "typeVersion": 1,
+      "position": [
+        2080,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const failures = $json.failures || [];\nconst timestamp = $json.summary.timestamp;\n\n// Format each error as a single JSON line\nconst lines = failures.map(f => \n  JSON.stringify({\n    timestamp: timestamp,\n    cnpj: f.cnpj,\n    status: \"error\",\n    error_message: f.error_message\n  })\n);\n\nreturn {\n  lines: lines.join('\\n') + (lines.length > 0 ? '\\n' : '')\n};"
+      },
+      "id": "6eb89df2-4ab8-4cf2-83b7-7eb1a43a08d2",
+      "name": "Format Errors JSONL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=echo -n \"{{ $json.lines }}\" >> /data/logs/errors.jsonl"
+      },
+      "id": "c67e98d2-43bb-4d7a-af7e-3ea7a2b2e88a",
+      "name": "Append to errors.jsonl",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2280,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NOTIFICATIONS_WEBHOOK_URL }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "=📊 **GovData Automator - Execução Concluída**\\n📅 Data: {{ $('Consolidate Outputs').item.json.dateStr }}\\n\\n✅ Sucesso: {{ $('Consolidate Outputs').item.json.summary.success_count }}\\n❌ Erros: {{ $('Consolidate Outputs').item.json.summary.error_count }}\\n📋 Total Processado: {{ $('Consolidate Outputs').item.json.summary.total_processed }}\\n\\nCNPJs com falha: {{ JSON.stringify($('Consolidate Outputs').item.json.summary.failed_cnpjs) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c71e98d2-5a2a-43eb-8e2b-ffc70ca0c08d",
+      "name": "Send Webhook Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2480,
+        340
+      ],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read CNPJ File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read CNPJ File": {
+      "main": [
+        [
+          {
+            "node": "Parse CNPJ List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse CNPJ List": {
+      "main": [
+        [
+          {
+            "node": "Call cnpj_flow Sub-workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call cnpj_flow Sub-workflow": {
+      "main": [
+        [
+          {
+            "node": "CNPJ Success?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CNPJ Success?": {
+      "main": [
+        [
+          {
+            "node": "Call cep_flow Sub-workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Success and Failures",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Call cep_flow Sub-workflow": {
+      "main": [
+        [
+          {
+            "node": "Merge CNPJ and CEP Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge CNPJ and CEP Data": {
+      "main": [
+        [
+          {
+            "node": "Merge Success and Failures",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Success and Failures": {
+      "main": [
+        [
+          {
+            "node": "Consolidate Outputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidate Outputs": {
+      "main": [
+        [
+          {
+            "node": "JSON Success to CSV",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Write Summary JSON",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Format Errors JSONL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Success to CSV": {
+      "main": [
+        [
+          {
+            "node": "Write Raw CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Raw CSV": {
+      "main": [
+        [
+          {
+            "node": "Post-process CSV (Python)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Summary JSON": {
+      "main": [
+        [
+          {
+            "node": "Send Webhook Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Errors JSONL": {
+      "main": [
+        [
+          {
+            "node": "Append to errors.jsonl",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "active": false,
+  "id": "main_flow"
+}

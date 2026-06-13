@@ -1,0 +1,189 @@
+{
+  "name": "cep_flow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "e3012921-2a07-4272-9b2b-42fa883017cf",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        380,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://brasilapi.com.br/api/cep/v2/{{ $json.cep }}",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "id": "ef2e98c7-4952-4467-897b-cf1097fa62a0",
+      "name": "BrasilAPI CEP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        580,
+        240
+      ],
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.cep }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "2de1247d-780c-4d51-8d2a-e1dbd43ee602",
+      "name": "Fetch Successful?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        780,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "cep_status",
+              "value": "success"
+            },
+            {
+              "name": "cep",
+              "value": "={{ $json.cep }}"
+            },
+            {
+              "name": "logradouro_completo",
+              "value": "={{ $json.street }}"
+            },
+            {
+              "name": "bairro",
+              "value": "={{ $json.neighborhood }}"
+            },
+            {
+              "name": "cidade",
+              "value": "={{ $json.city }}"
+            },
+            {
+              "name": "estado",
+              "value": "={{ $json.state }}"
+            },
+            {
+              "name": "latitude",
+              "value": "={{ $json.location && $json.location.coordinates ? $json.location.coordinates.latitude : '' }}"
+            },
+            {
+              "name": "longitude",
+              "value": "={{ $json.location && $json.location.coordinates ? $json.location.coordinates.longitude : '' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8f8e02d8-9cc0-4f51-a9f8-b39f7ee6fb8f",
+      "name": "Format Success Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        980,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "cep_status",
+              "value": "error"
+            },
+            {
+              "name": "cep",
+              "value": "={{ $('Execute Workflow Trigger').item.json.cep }}"
+            },
+            {
+              "name": "latitude",
+              "value": ""
+            },
+            {
+              "name": "longitude",
+              "value": ""
+            },
+            {
+              "name": "error_message",
+              "value": "CEP inválido ou não encontrado na API"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "675be8c0-8a47-4977-8bb3-5b8cb4cbb3e8",
+      "name": "Format Error Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        980,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "BrasilAPI CEP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BrasilAPI CEP": {
+      "main": [
+        [
+          {
+            "node": "Fetch Successful?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Successful?": {
+      "main": [
+        [
+          {
+            "node": "Format Success Output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Error Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "active": false,
+  "id": "cep_flow"
+}
