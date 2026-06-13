@@ -33,8 +33,8 @@
     },
     {
       "parameters": {
-        "fileType": "text",
-        "filePath": "/data/data/input/cnpjs_exemplo.txt",
+        "operation": "read",
+        "fileSelector": "/data/data/input/cnpjs_exemplo.txt",
         "options": {}
       },
       "id": "e0e85ff7-03f4-4345-8f64-88331fb35593",
@@ -48,7 +48,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const content = $json.fileContent || '';\nconst lines = content.split(/\\r?\\n/);\nconst cnpjs = lines\n  .map(line => line.trim())\n  .filter(line => line.length > 0);\n\nreturn cnpjs.map(cnpj => ({ json: { cnpj } }));"
+        "jsCode": "const binaryData = $input.first().binary?.data;\n\nif (!binaryData) {\n  throw new Error('Nenhum dado binário encontrado. Verifique se o arquivo cnpjs_exemplo.txt existe em /data/data/input/');\n}\n\nconst content = Buffer.from(binaryData.data, 'base64').toString('utf-8');\n\nconst cnpjs = content\n  .split(/\\r?\\n/)\n  .map(line => line.trim())\n  .filter(line => line.length > 0);\n\nif (cnpjs.length === 0) {\n  throw new Error('Arquivo de CNPJs está vazio.');\n}\n\nreturn cnpjs.map(cnpj => ({ json: { cnpj } }));"
       },
       "id": "d8a1c97a-9a99-4d2b-a01b-554f67c3bbde",
       "name": "Parse CNPJ List",
@@ -171,8 +171,9 @@
     },
     {
       "parameters": {
-        "fileType": "binary",
-        "filePath": "=/data/data/output/resultado_RAW_{{ $('Consolidate Outputs').item.json.timestamp }}.csv",
+        "operation": "write",
+        "fileName": "=/data/data/output/resultado_RAW_{{ $('Consolidate Outputs').item.json.timestamp }}.csv",
+        "dataPropertyName": "data",
         "options": {}
       },
       "id": "8cbe98c2-3e28-4ef7-b247-a8ee3b97b0a8",
@@ -199,9 +200,22 @@
     },
     {
       "parameters": {
-        "fileType": "text",
-        "filePath": "=/data/data/output/resumo_{{ $('Consolidate Outputs').item.json.dateStr }}.json",
-        "fileContent": "={{ JSON.stringify($json.summary, null, 2) }}",
+        "jsCode": "const summary = $('Consolidate Outputs').item.json.summary;\nconst content = JSON.stringify(summary, null, 2);\nconst buffer = Buffer.from(content, 'utf-8');\n\nreturn [{\n  json: $json,\n  binary: {\n    data: {\n      data: buffer.toString('base64'),\n      mimeType: 'application/json',\n      fileName: 'resumo.json'\n    }\n  }\n}];"
+      },
+      "id": "e93fcd3a-4412-4fb8-bf01-cb8b52f1ef2e",
+      "name": "Convert Summary to Binary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/data/data/output/resumo_{{ $('Consolidate Outputs').item.json.dateStr }}.json",
+        "dataPropertyName": "data",
         "options": {}
       },
       "id": "5f5e9bd1-cdfa-4e78-be7f-fb10c5e3fef9",
@@ -209,7 +223,7 @@
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1,
       "position": [
-        2080,
+        2180,
         340
       ]
     },
@@ -381,7 +395,7 @@
             "index": 0
           },
           {
-            "node": "Write Summary JSON",
+            "node": "Convert Summary to Binary",
             "type": "main",
             "index": 0
           },
@@ -409,6 +423,17 @@
         [
           {
             "node": "Post-process CSV (Python)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Summary to Binary": {
+      "main": [
+        [
+          {
+            "node": "Write Summary JSON",
             "type": "main",
             "index": 0
           }
