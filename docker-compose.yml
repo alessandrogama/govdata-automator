@@ -16,6 +16,8 @@ services:
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
       - N8N_RUNNERS_DISABLED=true
       - NODE_PATH=/usr/local/lib/node_modules/n8n/node_modules
+      - N8N_PUBLIC_API_ENABLED=true
+      - N8N_API_KEY=govdata-local-key-12345
     volumes:
       - n8n_data:/home/node/.n8n
       - .:/data
